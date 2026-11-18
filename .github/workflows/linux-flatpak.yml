@@ -34,6 +34,7 @@ jobs:
       - name: Build application bundle
         run: |
           flatpak build-init app "$APP_ID" org.gnome.Sdk org.gnome.Platform "$RUNTIME_VERSION"
+          mkdir -p app/files/bin
           install -m755 Lightning-Proxy/lightning-proxy app/files/bin/lightning-proxy
           install -m755 Lightning-Proxy/{proxy-engine,xray} app/files/bin/
           install -m644 Lightning-Proxy/panel.html app/files/bin/
