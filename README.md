@@ -1,45 +1,46 @@
 # ⚡ Lightning Proxy
 
-Lightning Proxy is a desktop proxy client for macOS, Windows, and Linux. Import a VLESS REALITY profile or a compatible HTTPS subscription, choose a connection mode, and connect. Profiles are saved locally so they’re available the next time you open the app.
+Lightning Proxy is a desktop proxy client for **macOS, Windows, and Linux**. Import a VLESS REALITY profile or a compatible HTTPS subscription, choose how to route your traffic, and connect. Imported profiles are saved locally and available the next time you open the app.
 
-[View releases on GitHub](https://github.com/Kaasplank1234/Lightning-Proxy/releases)
+[Download Lightning Proxy](https://lightning-proxy.pages.dev/#downloads) · [Installation guide](https://lightning-proxy.pages.dev/#installation) · [GitHub Releases](https://github.com/Kaasplank1234/Lightning-Proxy/releases)
 
-## Downloads
+## Technical specifications
 
-| Platform | Package |
+| Specification | Details |
 | --- | --- |
-| macOS 11 or later · Apple Silicon | `Lightning-Proxy-5.2-macOS-AppleSilicon.dmg` |
-| macOS 11 or later · Intel | `Lightning-Proxy-5.2-macOS-Intel.dmg` |
-| Windows 10 or 11 · x64 | `Lightning-Proxy-5.2-Windows-x64.zip` |
-| Linux · x64 | `Lightning-Proxy-5.2-Linux-x64.tar.gz` |
+| Supported protocol | VLESS REALITY over TCP |
+| Profile import | `vless://` links and compatible HTTPS subscription URLs |
+| Profile storage | Imported profiles are stored locally |
+| Device-wide routing | TUN mode routes TCP and UDP traffic, including traffic from apps without their own proxy settings |
+| Local SOCKS5 proxy | `127.0.0.1:10808` |
+| Local HTTP proxy | `127.0.0.1:10809` |
+| System Proxy | macOS only. Restores the previous system proxy settings when you disconnect |
 
-You’ll need a VLESS profile or compatible subscription from your proxy provider to connect.
+Lightning Proxy uses a profile or subscription supplied by your proxy provider. You’ll need one to connect.
 
-## Installation
+## Supported platforms
 
-- **macOS** — Open the DMG for your processor and drag **Lightning Proxy** into **Applications**. macOS may show a Gatekeeper prompt because the build isn’t Apple-notarized. The first time you enable a system mode, the app may ask for administrator approval to install its networking helpers.
-- **Windows** — Extract the entire ZIP and run **Lightning Proxy.exe** from the extracted folder. TUN mode may trigger a Windows administrator prompt.
-- **Linux** — Extract the archive, install GTK 3 and WebKitGTK if needed, and run `./lightning-proxy` from the extracted directory. To enable TUN, run `./Setup-Tunnel.sh` once. TUN requires `/dev/net/tun`.
+| Platform | Architecture | Download format |
+| --- | --- | --- |
+| macOS 11 or later | Apple Silicon (ARM64) | DMG |
+| macOS 11 or later | Intel (x64) | DMG |
+| Windows 10 or 11 | x64 | ZIP |
+| Linux | x64 | TAR.GZ |
 
-## Connection modes
+The Linux app uses GTK 3 and WebKitGTK. Linux TUN mode also requires `/dev/net/tun`. Enabling TUN for the first time may require administrator approval.
 
-| Mode | How it routes traffic |
-| --- | --- |
-| TUN | Routes TCP and UDP traffic device-wide, including traffic from apps without proxy settings. |
-| Local Proxy | Lets you configure individual apps to use SOCKS5 at `127.0.0.1:10808` or HTTP at `127.0.0.1:10809`. |
-| System Proxy · macOS | Sets the macOS proxy for apps that respect system settings and restores the previous settings on disconnect. |
+## Choose a connection mode
 
-## First connection
+- **TUN** routes traffic device-wide. Use it for desktop apps that don’t offer their own proxy settings.
+- **Local Proxy** routes traffic from apps you configure to use the local SOCKS5 or HTTP proxy.
+- **System Proxy** applies proxy settings on macOS for apps that follow those settings.
 
-1. Import a `vless://` link or a compatible HTTPS subscription URL.
-2. Select the imported profile.
-3. Choose **TUN** for device-wide routing or **Local Proxy** to configure apps individually.
-4. Connect and check the status in Lightning Proxy.
+## Installation and help
 
-If a connection fails, try a freshly imported profile. If Local Proxy connects but TUN doesn’t, check whether the app received permission to configure the tunnel.
+See the [Lightning Proxy installation guide](https://lightning-proxy.pages.dev/#installation) for setup on macOS, Windows, and Linux, including how to open the app on macOS and enable TUN. The website also covers your first connection and common connection problems.
 
-## Feedback
+## Report a problem
 
-Report problems through [GitHub Issues](https://github.com/Kaasplank1234/Lightning-Proxy/issues). Include your operating system, app version, connection mode, and the error message. Keep subscription URLs and full VLESS links private because they can contain credentials.
+Open an issue on [GitHub](https://github.com/Kaasplank1234/Lightning-Proxy/issues). Include your operating system, app version, connection mode, and exact error message. Remove subscription URLs, full VLESS links, and credentials before sharing logs or screenshots.
 
 Made by [Cheesy Studios](https://www.cheesy-studios.22web.org/).
