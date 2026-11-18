@@ -1,0 +1,93 @@
+name: Linux Flatpak
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/linux-flatpak.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  flatpak:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      APP_ID: io.github.Kaasplank1234.LightningProxy
+      RUNTIME_VERSION: '50'
+      RELEASE_TAG: Download
+      SOURCE_NAME: Lightning-Proxy-5.2-Linux-x64.tar.gz
+      BUNDLE_NAME: Lightning-Proxy-5.2-Linux-x64.flatpak
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Install Flatpak and GNOME runtime
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y flatpak
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak install --user --noninteractive -y flathub "org.gnome.Platform//$RUNTIME_VERSION" "org.gnome.Sdk//$RUNTIME_VERSION"
+      - name: Download and verify the existing Linux build
+        run: |
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern "$SOURCE_NAME"
+          echo "e155732440beeaaaae3871aa01300f55a4578f2c1cd9b6a5a55e5b3e2104ab8f  $SOURCE_NAME" | sha256sum -c -
+          tar -xzf "$SOURCE_NAME"
+      - name: Build application bundle
+        run: |
+          flatpak build-init app "$APP_ID" org.gnome.Sdk org.gnome.Platform "$RUNTIME_VERSION"
+          install -m755 Lightning-Proxy/lightning-proxy app/files/bin/lightning-proxy
+          install -m755 Lightning-Proxy/{proxy-engine,xray} app/files/bin/
+          install -m644 Lightning-Proxy/panel.html app/files/bin/
+          install -Dm644 Lightning-Proxy/Licenses/Xray.txt app/files/share/licenses/"$APP_ID"/Xray.txt
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          panel = Path("app/files/bin/panel.html")
+          text = panel.read_text()
+          assert '<option value="tunnel">Device Tunnel</option>' in text
+          text = text.replace('<option value="tunnel">Device Tunnel</option>', '')
+          text = text.replace(' Device Tunnel routes apps automatically. To enable it, run Setup-Tunnel.sh once as described in README.txt.', ' Configure each app to use either of these ports.')
+          text = text.replace('<label class="check"><input id="quad" type="checkbox"> Use Quad9 DNS in Device Tunnel</label>', '<input id="quad" type="checkbox" hidden>')
+          panel.write_text(text)
+          host = Path("app/files/bin/lightning-proxy")
+          text = host.read_text().replace("import os", "import json\nimport os", 1)
+          needle = "            requests.put(text)"
+          assert needle in text
+          bridge = [
+              "try:",
+              "    payload = json.loads(text)",
+              "except ValueError:",
+              "    return",
+              "if isinstance(payload, dict):",
+              "    payload['device'] = False",
+              "    requests.put(json.dumps(payload))",
+          ]
+          text = text.replace(needle, "\n".join(" " * 12 + line for line in bridge))
+          compile(text, str(host), 'exec')
+          host.write_text(text)
+          PY
+          shared=app/files/share
+          mkdir -p "$shared/applications" "$shared/icons/hicolor/scalable/apps"
+          cat > "$shared/applications/$APP_ID.desktop" <<DESKTOP
+          [Desktop Entry]
+          Name=Lightning Proxy
+          Comment=Connect using a VLESS REALITY profile
+          Exec=lightning-proxy
+          Icon=$APP_ID
+          Terminal=false
+          Type=Application
+          Categories=Network;
+          DESKTOP
+          cat > "$shared/icons/hicolor/scalable/apps/$APP_ID.svg" <<'SVG'
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><rect width="128" height="128" rx="26" fill="#151b2c"/><path d="M71 13 33 69h26l-4 46 42-62H71z" fill="#e2fa87"/></svg>
+          SVG
+          flatpak build-finish --command=lightning-proxy --share=network --share=ipc --socket=wayland --socket=fallback-x11 --device=dri app
+          flatpak build-export repo app stable
+          flatpak build-bundle --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo repo "$BUNDLE_NAME" "$APP_ID" stable
+      - name: Install and test bundle
+        run: |
+          flatpak install --user -y --bundle "./$BUNDLE_NAME"
+          flatpak run --command=python3 "$APP_ID" -c 'import gi; gi.require_version("Gtk","3.0"); gi.require_version("WebKit2","4.1"); from gi.repository import Gtk, WebKit2'
+          flatpak run --command=/app/bin/xray "$APP_ID" version
+          printf '{"action":"load"}\n' | flatpak run --command=/app/bin/proxy-engine "$APP_ID" | grep -q '"active":false'
+      - name: Publish verified Flatpak
+        run: gh release upload "$RELEASE_TAG" "$BUNDLE_NAME" --repo "$GITHUB_REPOSITORY" --clobber
