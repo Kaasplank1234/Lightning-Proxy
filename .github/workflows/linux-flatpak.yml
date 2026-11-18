@@ -23,7 +23,7 @@ jobs:
       - name: Install Flatpak and GNOME runtime
         run: |
           sudo apt-get update -q
-          sudo apt-get install -y flatpak
+          sudo apt-get install -y flatpak librsvg2-bin
           flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
           flatpak install --user --noninteractive -y flathub "org.gnome.Platform//$RUNTIME_VERSION" "org.gnome.Sdk//$RUNTIME_VERSION"
       - name: Download and verify the existing Linux build
@@ -67,7 +67,7 @@ jobs:
           host.write_text(text)
           PY
           shared=app/files/share
-          mkdir -p "$shared/applications" "$shared/icons/hicolor/scalable/apps"
+          mkdir -p "$shared/applications" "$shared/icons/hicolor/128x128/apps"
           cat > "$shared/applications/$APP_ID.desktop" <<DESKTOP
           [Desktop Entry]
           Name=Lightning Proxy
@@ -78,9 +78,10 @@ jobs:
           Type=Application
           Categories=Network;
           DESKTOP
-          cat > "$shared/icons/hicolor/scalable/apps/$APP_ID.svg" <<'SVG'
+          cat > icon.svg <<'SVG'
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><rect width="128" height="128" rx="26" fill="#151b2c"/><path d="M71 13 33 69h26l-4 46 42-62H71z" fill="#e2fa87"/></svg>
           SVG
+          rsvg-convert -w 128 -h 128 -o "$shared/icons/hicolor/128x128/apps/$APP_ID.png" icon.svg
           flatpak build-finish --command=lightning-proxy --share=network --share=ipc --socket=wayland --socket=fallback-x11 --device=dri app
           flatpak build-export repo app stable
           flatpak build-bundle --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo repo "$BUNDLE_NAME" "$APP_ID" stable
